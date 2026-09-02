@@ -1,0 +1,21 @@
+[package]
+name = "feedback-memo"
+version = "0.1.0"
+description = "Quick, private feedback notes"
+authors = ["Feedback Memo contributors"]
+edition = "2021"
+
+[lib]
+name = "feedback_memo_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+thiserror = "2"
