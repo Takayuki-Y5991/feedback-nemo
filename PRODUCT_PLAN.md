@@ -1,237 +1,233 @@
-# Feedback Memo — プロダクト計画
+# Feedback Memo — Product Plan
 
-更新日: 2026-09-02
+Last updated: September 2, 2026
 
-## 1. 解決したい課題
+## 1. Problem
 
-開発チームが四半期ごとに入れ替わるため、3か月後に記憶だけを頼りにフィードバックを書くと、具体的な出来事や小さな貢献を忘れてしまう。
+The development team changes every quarter. When teammates wait three months before writing feedback, specific events and smaller contributions are easily forgotten.
 
-Feedback Memo は、仕事を中断せず数秒で「いつ・誰について・何があったか」を残し、四半期末に相手ごとのフィードバック材料として振り返れるデスクトップ常駐アプリにする。
+Feedback Memo is a lightweight desktop companion for capturing what happened, when it happened, and who it involved without interrupting the current task. At the end of the quarter, those notes become concrete source material for thoughtful feedback.
 
-## 2. プロダクト原則
+## 2. Product principles
 
-1. **記録まで5秒** — グローバルショートカットから即入力できる。
-2. **3項目だけ** — 日付、人、内容。分類や評価は記録時に要求しない。
-3. **思い出す負担を減らす** — 人別・期間別の時系列で事実を再提示する。
-4. **本人だけの下書き** — MVPはローカル保存とし、意図せぬ共有を起こさない。
-5. **フィードバックの送信はしない** — まずは「元ネタを残す・取り出す」に集中する。
+1. **Capture in five seconds** — Open the panel with a global shortcut and start immediately.
+2. **Only three inputs** — Date, person, and note. Do not require classification or evaluation while capturing.
+3. **Reduce recall effort** — Present observations chronologically by person and period.
+4. **Private by default** — Store MVP data locally and prevent accidental sharing.
+5. **Capture, do not send** — Focus first on recording and retrieving source material.
 
-## 3. 推奨する提供形態
+## 3. Product format
 
-macOS / Linuxで動く、システムトレイ（macOSではメニューバー）常駐型のデスクトップアプリを推奨する。
+Build a system-tray desktop app for macOS and Linux.
 
-- トレイアイコン、またはmacOSでは `Cmd + Shift + M`、Linuxでは `Ctrl + Shift + M` で入力パネルを開く
-- パネルはMVPでは画面右下に表示し、必要な間だけ最前面に置く。利用テスト後に右上・右下・前回位置から標準位置を決める
-- 保存後または `Esc` で閉じ、元の仕事へ戻る
-- オフラインで動作し、認証やネットワークを必要としない
+- Open the panel from the tray icon or with `Cmd + Shift + M` on macOS and `Ctrl + Shift + M` on Linux.
+- Show the panel at the bottom-right by default and keep it above other windows while it is needed.
+- Let the user drag the panel and restore its most recent position.
+- Keep the panel open after saving so several notes can be captured in sequence.
+- Close it explicitly with `Esc` or the close button.
+- Work offline without authentication or network access.
 
-通常のWebアプリやブラウザ拡張だけでは、ブラウザ以外で作業しているときの即時性が落ちる。MVPはTauri 2 + Rust + TypeScript + React + SQLiteを採用する。
+The MVP uses Tauri 2, Rust, React, TypeScript, pnpm, and SQLite. A regular web app or browser extension would add friction whenever the user is working outside the browser.
 
-Linuxはデスクトップ環境によってトレイとウィンドウ位置制御の挙動が異なる。特にWaylandで任意の絶対座標への配置が許可されない環境では、「右下」を要求し続けず、トレイ直下またはユーザーが最後に置いた位置へ表示するフォールバックを用意する。
+Linux desktop environments differ in tray and window-position behavior. When Wayland prevents absolute placement, the compositor-controlled or last-known position should be treated as the fallback.
 
-## 4. MVPの画面と操作
+## 4. MVP screens and behavior
 
-### 4.1 クイック記録パネル
+### 4.1 Quick-note panel
 
-右下に幅360〜400px程度のコンパクトなパネルを表示する。右上との比較後に設定項目へ発展させられるよう、配置処理はUIから分離する。
+Display a compact, frameless panel approximately 400px wide. Keep placement logic separate from the interface so top-right, bottom-right, and remembered-position options can be compared later.
 
-1. **日付**: 現在日時を自動設定。クリックすると編集できる。
-2. **人**: 設定済みメンバーから検索・選択。最後に選んだ人を候補上位にする。
-3. **内容**: 2〜3行の短いメモを基本とする複数行テキスト。補助文は「何が起きた？ どんな影響があった？」。
-4. **保存**: `Cmd/Ctrl + Enter`。成功を短く表示してパネルを閉じる。
+1. **Person** — Choose an active teammate. Keep the label and empty-state copy short.
+2. **Date** — Default to today. Preserve the current time internally while presenting a compact date picker.
+3. **Note** — A multiline input optimized for two or three short lines.
+4. **Save** — Use `Cmd/Ctrl + Enter` or the compact Save button.
 
-補助動作:
+Supporting behavior:
 
-- `Tab` だけで全項目を移動できる
-- `Esc` で閉じる
-- 入力途中で閉じた場合は端末内に下書きを保持する
-- 人または内容が未入力なら、その場で修正方法が分かるエラーを出す
-- 保存時に通信待ちを発生させない
+- Move through the form in the order `Person → Date → Note → Save` with Tab.
+- Use Shift+Tab to move backward.
+- Use `Esc` to close the panel.
+- Preserve an unfinished note locally when the panel closes.
+- Keep the panel open after saving, clear the note, and focus the note field again.
+- Show actionable inline errors when the person or note is missing.
+- Save without waiting for a network request.
 
-### 4.2 振り返り画面
+### 4.2 History
 
-- 現在の四半期のメモを新しい順に表示
-- 人、日付範囲、キーワードで絞り込み
-- 人を選ぶと、その人に関する出来事を時系列で一覧表示
-- メモの編集・削除（削除直後はUndo可能）
-- 人別のMarkdownコピーとCSVエクスポート
+- Show notes newest first.
+- Filter by teammate and keyword.
+- Add date-range and quarter filters.
+- Show a chronological view for an individual teammate.
+- Edit and delete notes, with Undo immediately after deletion.
+- Copy a teammate’s notes as Markdown or export them as CSV.
 
-AIによる文章生成やSlack等への送信はMVP外。元メモを勝手に評価・要約しない。
+AI-generated prose and sending to Slack or other systems are outside the MVP. The app must not silently rate, rewrite, summarize, or transmit source notes.
 
-### 4.3 設定画面
+### 4.3 Settings
 
-- 人の追加、表示名変更、並べ替え、無効化
-- 無効化した人も過去メモでは表示する
-- グローバルショートカットの変更
-- 四半期の開始月設定（暦年以外にも対応）
-- データのエクスポート / バックアップ復元
+- Add, rename, reorder, and deactivate teammates.
+- Continue showing deactivated teammates in historical notes.
+- Change the global shortcut.
+- Configure the first month of the organization’s quarter cycle.
+- Export, back up, and restore local data.
+- Choose top-right, bottom-right, or remembered window placement.
 
-## 5. 情報設計
+## 5. Data model
 
 ### Person
 
-| 項目 | 型 | 備考 |
+| Field | Type | Notes |
 | --- | --- | --- |
-| id | UUID | 内部識別子 |
-| name | text | 必須、設定画面で管理 |
-| is_active | boolean | チーム変更時は削除せず無効化 |
-| sort_order | integer | 選択肢の順序 |
-| created_at | datetime | 作成日時 |
+| id | integer | Internal SQLite identifier |
+| name | text | Required; managed in Settings |
+| is_active | boolean | Deactivate instead of deleting during team changes |
+| sort_order | integer | Ordering in selection controls; planned |
+| created_at | datetime | Creation timestamp |
 
 ### Memo
 
-| 項目 | 型 | 備考 |
+| Field | Type | Notes |
 | --- | --- | --- |
-| id | UUID | 内部識別子 |
-| occurred_at | datetime | デフォルトは保存時の現在日時、編集可 |
-| person_id | UUID | Personへの参照、必須 |
-| content | text | 必須 |
-| created_at | datetime | 監査用 |
-| updated_at | datetime | 監査用 |
+| id | integer | Internal SQLite identifier |
+| occurred_at | datetime | Defaults to the current local date and time; editable |
+| person_id | integer | Required reference to Person |
+| content | text | Required note content |
+| created_at | datetime | Audit timestamp |
+| updated_at | datetime | Audit timestamp |
 
-四半期は `occurred_at` と設定された開始月から都度算出し、メモ自体には固定値として持たせない。これにより四半期設定を直してもデータ移行が不要になる。
+### Setting
 
-## 6. UI方針
+| Field | Type | Notes |
+| --- | --- | --- |
+| key | text | Unique setting name |
+| value | text | Serialized setting value |
 
-- 視覚スタイルはフラットで静かな業務ツール。装飾より入力速度と可読性を優先する。
-- 背景はニュートラル、主要アクションだけ青緑系のアクセントを使用する。赤はエラー・削除専用。
-- 8px基準の余白、本文16px、操作領域44px以上、コントラスト4.5:1以上。
-- 保存、エラー、フォーカスを色だけで伝えず、アイコンと文言も併用する。
-- キーボードのみで完結し、フォーカスリングを常に見える状態にする。
-- アニメーションは開閉と保存確認のみ150〜200ms。OSの「視差効果を減らす」設定に従う。
+The quarter is calculated from `occurred_at` and the configured start month rather than stored on each memo. Changing the quarter configuration therefore does not require a data migration.
 
-## 7. 技術方針
+## 6. Interface direction
 
-| 領域 | 方針 |
+- Use a quiet, polished desktop-palette aesthetic inspired by macOS utility windows.
+- Favor spacing, typography, and subtle surface depth over decorative elements.
+- Use a neutral canvas with a restrained teal accent. Reserve red for errors and destructive actions.
+- Keep visible icons small while preserving sufficiently large interaction targets.
+- Maintain at least 4.5:1 contrast for normal text.
+- Communicate save, error, and focus states with text or icons in addition to color.
+- Support the complete capture flow from the keyboard with visible focus rings.
+- Limit motion to meaningful open, close, and save feedback around 150–200ms.
+- Respect the operating system’s reduced-motion preference.
+- Keep all application copy in English.
+
+## 7. Technical direction
+
+| Area | Decision |
 | --- | --- |
-| デスクトップ | Tauri 2 / Rust |
-| UI | React + TypeScript |
-| 永続化 | ローカルSQLite（単一ファイル、外部DBサーバー不要） |
-| 状態管理 | 小規模なMVPに適した最小構成とし、不要な依存を増やさない |
-| 検証 | Rust / TypeScriptの静的検査、単体テスト、主要操作のE2Eテスト |
-| 配布 | macOS `.dmg` / Linux `.AppImage`・`.deb` |
+| Desktop shell | Tauri 2 and Rust |
+| Interface | React and TypeScript |
+| Package manager | pnpm |
+| Persistence | Local SQLite file; no external database server |
+| State management | Prefer React primitives until additional state tooling is justified |
+| Verification | TypeScript checks, Rust formatting and Clippy, unit tests, and critical-path E2E tests |
+| Distribution | macOS `.dmg`; Linux `.AppImage` and `.deb` |
 
-MVPではアカウント、クラウド同期、管理者機能、サーバーを持たない。保存ファイルの置き場所を明示し、エクスポート可能にする。
+The MVP has no account, cloud sync, administrator console, or server. The database location must be documented, and users must be able to export their data.
 
-### 7.1 言語・GUI基盤の決定
+### 7.1 Language and desktop framework decision
 
-MVPはTauriを採用する。Wailsも画面部分は同じWeb技術で高品質に実装できるが、今回の中心機能であるシステムトレイ、グローバルショートカット、最前面小窓の公式サポートと実装経路を重視した。
+Tauri was selected for the MVP. Wails can produce an equally flexible web-based interface, but Tauri provides a clearer supported path for the product’s central requirements: a system tray, global shortcuts, a small always-on-top window, and lightweight distribution.
 
-RustはOS連携、SQLite、Tauriコマンドに範囲を限定する。画面と入力状態はReact + TypeScriptで実装し、Rust側を必要以上に大きくしない。
+Keep Rust limited to operating-system integration, SQLite access, window behavior, and Tauri commands. Implement visual presentation and form state in React and TypeScript.
 
-以下の比較は、将来の再検討用に残す。
+The alternatives considered were:
 
-| 候補 | 主な言語 | 長所 | 注意点 | 向いている場合 |
-| --- | --- | --- | --- | --- |
-| Tauri | Rust + TypeScript | 軽量、OS機能とWeb UIを両立、配布物が比較的小さい | Rustとフロントエンドの2系統を扱う | 軽さと長期保守を重視 |
-| Electron | TypeScript | 開発情報が多い、UI開発が速い、ほぼTypeScriptに統一可能 | メモリ使用量と配布サイズが大きめ | 開発速度と人材の見つけやすさを重視 |
-| Go + Wails | Go + TypeScript | Goでアプリ処理を書けてWeb UIも利用可能、SQLiteを組み込みやすい | トレイやグローバルショートカットはバージョンと追加実装の確認が必要 | Goを使いつつ柔軟なUIが必要 |
-| Go + Fyne | Go | ほぼGoだけで完結、クロスプラットフォーム、公式のシステムトレイAPIがある | 見た目の自由度とOSネイティブ連携はWails/Tauriより限定的 | 言語をGoに統一し、素朴で軽いUIを重視 |
-| Clojure + cljfx/JavaFX | Clojure | 宣言的UI、REPL開発、JavaFX/AWT/JDBCの資産を利用可能 | JVMの起動時間・常駐メモリ、jpackageによるOS別配布、グローバルホットキー用ライブラリが必要 | チームがClojure/JVMに強い |
-| Nim + GTK 4等 | Nim | ネイティブコンパイル、軽量、標準ライブラリからSQLiteを扱える | macOS/Linux両対応のGUI・トレイ・ホットキーを一式カバーする成熟した選択肢が少ない | Nim採用そのものに学習・検証価値がある |
-| Python + Qt | Python | 試作が速い、SQLiteとの相性がよい | パッケージングとOSごとの差分調整が増えやすい | チームがPythonに強く、まず検証したい |
+| Candidate | Main languages | Strengths | Tradeoffs |
+| --- | --- | --- | --- |
+| Tauri | Rust + TypeScript | Lightweight, strong OS integration, flexible web UI | Requires both Rust and frontend knowledge |
+| Electron | TypeScript | Mature ecosystem and fast UI development | Larger memory footprint and distribution size |
+| Go + Wails | Go + TypeScript | Go application layer with flexible web UI | Tray and shortcut behavior needs additional validation |
+| Go + Fyne | Go | Mostly one language and built-in system-tray support | Less visual flexibility and weaker native integration |
+| Clojure + cljfx/JavaFX | Clojure | Declarative UI and broad JVM ecosystem | JVM startup, memory, packaging, and global-hook dependencies |
+| Nim + GTK 4 | Nim | Native compilation, lightweight, built-in SQLite access | Smaller cross-platform desktop integration ecosystem |
+| Python + Qt | Python | Fast prototyping and straightforward SQLite support | Packaging and platform-specific tuning can become costly |
 
-SwiftはmacOSでは優秀だがLinuxとの共通実装にならないため、今回の第一候補にはしない。
+## 8. Delivery phases
 
-今回の要件との適合度だけで見ると、TauriとGoが最終候補になりやすい。ClojureはJVM運用を許容できれば十分実現可能。Nimも実装自体は可能だが、macOS/Linux双方のトレイとグローバルショートカットを自前で補う可能性が高く、プロダクト開発より基盤検証の割合が増える。
+### Phase 0 — Specification and interaction prototype
 
-### 7.2 選定基準
+- Confirm target operating systems and distribution constraints.
+- Prototype the quick panel, History, and Settings.
+- Validate keyboard focus and shortcut behavior.
 
-以下を順に重視して決める。
+### Phase 1 — Tauri technical slice and persistent shell
 
-1. 開発・保守する人が扱いやすい言語か
-2. macOS / Linuxでトレイ、グローバルショートカット、最前面表示を安定して実装できるか
-3. 常駐時のメモリ使用量と起動速度
-4. `.dmg`、`.AppImage`、`.deb`の配布・更新が容易か
-5. キーボード操作とアクセシビリティを作り込みやすいか
+- Validate tray, global shortcut, draggable frameless window, placement, and SQLite persistence.
+- Compare startup behavior and Linux Wayland/X11 behavior.
+- Record significant findings in an Architecture Decision Record.
 
-選定時の最終評価は次のとおり。
+### Phase 2 — Quick capture
 
-- **今回の採用:** Tauri（Rust + TypeScript）
-- **Goを使いたく、構成を単純にしたい:** Go + Fyne。UI自由度が必要ならGo + Wails
+- Complete teammate setup, memo persistence, and draft recovery.
+- Refine the compact English interface.
+- Verify repeated capture without closing the panel.
 
-ClojureまたはNimを選ぶ場合は、言語への興味だけでなく今後の保守担当者と配布条件も含めて決める。
+### Phase 3 — Review and data management
 
-## 8. 実装フェーズ
+- Add person, period, and keyword filtering.
+- Add editing, deletion, and Undo.
+- Add Markdown copying and CSV export.
+- Add configurable quarter boundaries.
 
-### Phase 0 — 仕様確定・操作プロトタイプ（0.5〜1日）
+### Phase 4 — Quality and distribution
 
-- 対象OSと配布方法を確定
-- 右上パネル、一覧、設定の低忠実度プロトタイプ
-- ショートカットとフォーカス遷移を確認
+- Verify keyboard access, accessibility, and multi-monitor placement.
+- Test SQLite migrations, export, backup, and restore.
+- Produce macOS and Linux builds with installation documentation.
 
-### Phase 1 — Tauri技術スパイクと常駐シェル（1〜2日）
+## 9. MVP acceptance criteria
 
-- Tauriで、トレイ・ショートカット・右上表示・SQLite保存だけの小さな検証を行う
-- 起動速度、常駐メモリ、Linux Wayland / X11、macOSでの挙動を比較
-- 検証結果をADR（Architecture Decision Record）として残す
+- A global shortcut opens the panel while another application is active.
+- The panel opens at a predictable position and can be dragged elsewhere.
+- The most recent quick-panel position survives an application restart.
+- The complete capture flow works without a mouse.
+- The initial date uses the device’s current local date and retains the current time internally.
+- Only configured active teammates appear in the capture selector.
+- A saved note appears in History immediately.
+- The panel stays open after saving and is ready for another note.
+- Notes and unfinished drafts survive an application restart.
+- Deactivating a teammate does not break historical notes.
+- Notes can be filtered by teammate and period and exported as Markdown or CSV.
+- Major actions have meaningful accessible names and visible focus states.
+- All application-facing copy is English.
 
-### Phase 2 — クイック記録（2〜3日）
+## 10. Existing-product alternatives
 
-- 採用基盤でプロジェクトを初期化
-- トレイ / メニューバー、グローバルショートカット
-- 右上・最前面パネルの表示制御
-- 人の設定、メモ保存、下書き復元
+### Fastest habit test
 
-### Phase 3 — 振り返りとデータ管理（2〜3日）
+For a macOS-first team, Raycast Notes can test the habit quickly by opening a floating note with a hotkey and keeping one section per teammate. Person selection, quarter filtering, and structured export would remain manual.
 
-- 人別・期間別の一覧と検索
-- 編集、削除、Undo
-- Markdownコピー、CSVエクスポート
-- 四半期開始月設定
+A Notion database with Date, Person, and Note fields could be opened from a Raycast Quicklink. This provides structure but adds navigation, network dependency, and more friction at capture time.
 
-### Phase 4 — 品質確認と配布（1〜2日）
+If the organization already licenses a performance-management platform with continuous feedback, it may also be viable. Its private-note behavior, visibility rules, and capture speed must be verified before adoption.
 
-- キーボード操作、アクセシビリティ、複数画面での表示位置を検証
-- SQLiteの移行・バックアップ試験
-- macOS / Linux向けビルドとインストール手順
+### Decision guide
 
-MVPの目安は、仕様確定後5〜9開発日。
+- **Test only whether the habit works:** Run a one-week Raycast Notes trial.
+- **Structure the three fields and reuse them every quarter:** Continue building Feedback Memo.
+- **Manage organization-wide reviews, permissions, and delivery:** Evaluate an existing performance-management platform.
 
-## 9. MVP受け入れ条件
+## 11. Post-MVP opportunities
 
-- 任意のアプリを使用中にショートカットでパネルを開ける
-- macOSおよび位置指定可能なLinux環境では、パネルが現在使用中のディスプレイ右上に表示される
-- 位置指定が制限されるLinux環境でも、毎回予測可能な位置に表示される
-- 起動から保存までマウスなしで操作できる
-- 日付の初期値が端末の現在日時・タイムゾーンになる
-- 設定した人だけが選択候補に出る
-- 保存後、振り返り画面に即座に反映される
-- アプリ再起動後もメモと下書きが残る
-- 人を無効化しても過去メモは壊れない
-- 人別・期間別に絞り込み、MarkdownまたはCSVとして取り出せる
-- 主要操作をVoiceOver / Narratorで識別できる
+- Quick capture from Slack or Microsoft Teams
+- Encrypted sync between devices
+- Project or theme tags rather than Good/Improve ratings
+- AI-assisted feedback drafting from a user-selected date range
+- A subtle reminder when no recent notes exist for a teammate
 
-## 10. 既存アプリで代替する場合
+If AI drafting is added, source observations and generated prose must remain visibly separate. Nothing is sent externally until the user explicitly reviews and approves it.
 
-### 最短の検証案
+## 12. Remaining product decisions
 
-macOS中心なら、Raycast Notesをホットキーで浮動表示し、人ごとの見出しを作ると「すぐ残す」習慣だけは最短で検証できる。ただし、人の選択、四半期フィルター、構造化エクスポートは手作業になる。
-
-Notion等のデータベースに「日付・人・内容」を作り、Raycast Quicklinkから新規登録画面を開く方法もある。構造化はできるが、入力完了までの画面遷移とネットワーク依存が増える。
-
-人事評価プラットフォームの継続的フィードバック機能は、すでに会社で契約・導入されているなら候補になる。ただし、今回の中心課題である「作業中に数秒で私的な元ネタを残す」体験と、保存内容の公開範囲を事前に確認する必要がある。
-
-### 判断
-
-- **まず習慣が成立するかだけ試す**: Raycast Notes等で1週間試験
-- **3項目を確実に構造化し、四半期末に再利用する**: Feedback Memoを実装
-- **全社の評価運用・権限・共有まで必要**: 既存の人事評価サービスを比較導入
-
-## 11. MVP後の候補
-
-- Slack / Teamsからのクイック記録
-- 端末間の暗号化同期
-- タグ（Good / Improveではなく、プロジェクトやテーマ）
-- 選択した期間のメモからフィードバック文案を作るAI補助
-- 「最近メモしていない人」の控えめなリマインダー
-
-AI文案生成を追加する場合も、事実と生成文を明確に分け、ユーザーが確認するまで外部送信しない。
-
-## 12. 実装開始前に確定する事項
-
-1. macOS / Linuxのうち、先に完成させる優先OS
-2. Linuxの主なディストリビューション、デスクトップ環境、Wayland / X11の別
-3. 会社端末で未署名アプリを実行できるか、macOSの配布署名・公証が必要か
-4. メモを端末外へ一切送らない方針でよいか
-5. 四半期が暦年基準か、任意の開始月か
+1. Which platform should receive release-level polish first: macOS or Linux?
+2. Which Linux distributions, desktop environments, and Wayland/X11 sessions are required?
+3. Do company devices require macOS signing and notarization?
+4. Must memo content remain completely offline in every future version?
+5. Does the organization use calendar quarters or a custom starting month?

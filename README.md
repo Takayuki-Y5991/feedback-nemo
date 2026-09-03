@@ -1,57 +1,85 @@
 # Feedback Memo
 
-日々の出来事を「日時・人・内容」の3項目で素早く残し、四半期末のフィードバック材料として人ごとに振り返るためのローカルファーストなデスクトップアプリです。
+A local-first desktop app for capturing short notes about teammates and reviewing those moments when it is time to write quarterly feedback.
 
-## 現在の実装
+## Current features
 
-- Tauri 2によるmacOS / Linux向けデスクトップ構成
-- 右下に表示するクイック入力パネル
-- ヘッダーのドラッグ移動と、SQLiteによる表示位置の復元
-- 2〜3行の短い記録に合わせたコンパクトな入力欄
-- `人 → 日時 → 内容 → 保存` のTab移動
-- macOS: `Cmd + Shift + M`、Linux: `Ctrl + Shift + M`
-- システムトレイからのクイック入力・振り返り・終了
-- SQLiteへの人物・メモ保存
-- 入力途中の下書き保持
-- 人・キーワードによる履歴絞り込み
-- メンバー追加設定
+- Tauri 2 desktop app for macOS and Linux
+- Compact quick-note panel that opens at the bottom-right by default
+- Draggable header with window position restored from SQLite
+- A short note field designed for two or three lines
+- Keyboard flow: `Person → Date → Note → Save`
+- Global shortcut: `Cmd + Shift + M` on macOS and `Ctrl + Shift + M` on Linux
+- System tray actions for New note, History, and Quit
+- Local SQLite storage for teammates, notes, and window position
+- Draft recovery when the panel closes before saving
+- History filtering by teammate and keyword
+- Teammate setup
+- English-only application interface and error messages
 
-SQLiteファイルはOS標準のアプリデータディレクトリ配下に `feedback-memo.sqlite3` として保存されます。
+The SQLite database is stored as `feedback-memo.sqlite3` in the operating system’s standard application-data directory.
 
-## 開発環境
+## Development requirements
 
-- Node.js 20以降
-- Rust stable
-- Tauri 2のLinuxまたはmacOS向けシステム依存パッケージ
+- Node.js 20 or later
+- pnpm 10
+- Stable Rust toolchain
+- Tauri 2 system dependencies for Linux or macOS
+
+Install dependencies and start the desktop app:
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
 
-Web UIのみを確認する場合:
+To preview only the web interface:
 
 ```bash
 pnpm dev
 ```
 
-ブラウザ確認時はSQLiteの代わりに一時的なサンプルデータを使います。
+The browser preview uses temporary sample data instead of SQLite.
 
-## 検証
+## Desktop release build
+
+Create a standalone optimized binary and the installers supported by the current operating system:
+
+```bash
+pnpm tauri build
+```
+
+Linux output is written under `src-tauri/target/release/`:
+
+- `feedback-memo` — standalone executable for the current Linux architecture
+- `bundle/appimage/*.AppImage` — portable Linux application
+- `bundle/deb/*.deb` — Debian and Ubuntu installer
+- `bundle/rpm/*.rpm` — Fedora and RPM-based installer
+
+Run the AppImage without Node.js, pnpm, or a source checkout:
+
+```bash
+chmod +x "Feedback Memo_0.1.0_amd64.AppImage"
+./"Feedback Memo_0.1.0_amd64.AppImage"
+```
+
+Build the macOS `.app` and `.dmg` on a macOS machine with the same `pnpm tauri build` command. Public distribution additionally requires Apple signing and notarization.
+
+## Verification
 
 ```bash
 pnpm build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-cargo check --manifest-path src-tauri/Cargo.toml
+cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 ```
 
-## 次の実装候補
+## Planned improvements
 
-- 人の無効化・並べ替え
-- メモ編集と削除Undo
-- 四半期フィルター
-- Markdown / CSVエクスポート
-- 右上・右下・前回位置の比較と設定化
-- AppImage / deb / dmgの配布ビルド
+- Deactivate and reorder teammates
+- Edit notes and undo deletion
+- Quarter-based filtering
+- Markdown and CSV export
+- Optional top-right, bottom-right, or last-position placement
+- AppImage, deb, and dmg release builds
 
-プロダクト計画は [PRODUCT_PLAN.md](./PRODUCT_PLAN.md) を参照してください。
+See [PRODUCT_PLAN.md](./PRODUCT_PLAN.md) for the product plan.
