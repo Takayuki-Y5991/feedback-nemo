@@ -7,6 +7,8 @@
     "core:default",
     "core:event:default",
     "core:window:default",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "dialog:allow-save",
+    "clipboard-manager:allow-write-text"
   ]
 }
